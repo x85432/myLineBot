@@ -1,3 +1,4 @@
 line-bot-sdk
 flask
 gunicorn
+uvicorn # For running the app with Uvicorn
