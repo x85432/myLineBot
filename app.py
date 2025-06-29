@@ -8,7 +8,13 @@ InvalidSignatureError
 from linebot.models import (
 MessageEvent, TextMessage, TextSendMessage,
 )
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
+channel_access_token = os.getenv('CHANNEL_ACCESS_TOKEN')
+channel_secret = os.getenv('CHANNEL_SECRET')
+user_id = os.getenv('USER_ID')
 
 app = Flask(__name__)  
 # 監聽所有來自 /callback 的 Post Request 
@@ -29,12 +35,12 @@ def callback():
     return 'OK'
 
 # 必須放上自己的Channel Access Token 
-line_bot_api = LineBotApi('')  
+line_bot_api = LineBotApi(channel_access_token)  
 
 # 必須放上自己的Channel Secret
-handler = WebhookHandler('')
+handler = WebhookHandler(channel_secret)
 
-line_bot_api.push_message('', TextSendMessage(text='你可以開始了'))
+line_bot_api.push_message(user_id, TextSendMessage(text='你可以開始了'))
 
 #訊息傳遞區塊 
 ##### 基本上程式編輯都在這個function ##### 

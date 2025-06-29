@@ -13,3 +13,4 @@ oauth2client==4.1.3
 pyimgur
 mpl_finance
 arrow
+python-dotenv
