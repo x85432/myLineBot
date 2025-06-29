@@ -2,3 +2,4 @@ line-bot-sdk
 flask
 gunicorn
 uvicorn # For running the app with Uvicorn
+dotenv # For loading environment variables from .env file
