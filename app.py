@@ -41,6 +41,7 @@ from linebot.v3.webhooks import (
 load_dotenv()
 channel_secret = os.getenv('CHANNEL_SECRET', None)
 channel_access_token = os.getenv('CHANNEL_ACCESS_TOKEN', None)
+server_platform = os.getenv('SERVER_PLATFORM', 'ngrok')
 
 if channel_secret is None:
     print('Specify CHANNEL_SECRET as environment variable.')
@@ -62,7 +63,7 @@ async def lifespan(app: FastAPI):
             await line_bot_api.push_message(
                 PushMessageRequest(
                     to=user_id,
-                    messages=[TextMessage(text="✅ LINE Bot 已經開機了！(Lifespan 版)")]
+                    messages=[TextMessage(text=f"LINE bot 已經重新啟動在 {server_platform}")]
                 )
             )
             print("Startup notification sent to owner.")
