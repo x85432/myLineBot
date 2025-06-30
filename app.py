@@ -13,6 +13,7 @@
 #  under the License.
 
 import asyncio
+from inspect import signature
 import os
 import sys
 from dotenv import load_dotenv
@@ -38,10 +39,11 @@ from linebot.v3.webhooks import (
     StickerMessageContent
 )
 # Configurations
-load_dotenv()
+load_dotenv(dotenv_path='.env', override=True)
 channel_secret = os.getenv('CHANNEL_SECRET', None)
 channel_access_token = os.getenv('CHANNEL_ACCESS_TOKEN', None)
 server_platform = os.getenv('SERVER_PLATFORM', 'ngrok')
+
 
 if channel_secret is None:
     print('Specify CHANNEL_SECRET as environment variable.')
@@ -60,6 +62,9 @@ async def lifespan(app: FastAPI):
     user_id = os.getenv('USER_ID')
     if user_id:
         try:
+            print("Using CHANNEL_ACCESS_TOKEN:", os.getenv("CHANNEL_ACCESS_TOKEN"))
+            print("Using CHANNEL_SECRET:", os.getenv("CHANNEL_SECRET"))
+
             await line_bot_api.push_message(
                 PushMessageRequest(
                     to=user_id,
