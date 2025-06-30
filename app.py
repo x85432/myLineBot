@@ -19,6 +19,7 @@ import sys
 from dotenv import load_dotenv
 from fastapi import Request, FastAPI, HTTPException
 from contextlib import asynccontextmanager
+from google import genai
 
 from linebot.v3.webhook import WebhookParser
 from linebot.v3.messaging import (
@@ -44,6 +45,9 @@ channel_secret = os.getenv('CHANNEL_SECRET', None)
 channel_access_token = os.getenv('CHANNEL_ACCESS_TOKEN', None)
 server_platform = os.getenv('SERVER_PLATFORM', 'ngrok')
 
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY", None))
+chat = client.chats.create(model="gemini-2.0-flash")
+
 
 if channel_secret is None:
     print('Specify CHANNEL_SECRET as environment variable.')
@@ -62,9 +66,6 @@ async def lifespan(app: FastAPI):
     user_id = os.getenv('USER_ID')
     if user_id:
         try:
-            print("Using CHANNEL_ACCESS_TOKEN:", os.getenv("CHANNEL_ACCESS_TOKEN"))
-            print("Using CHANNEL_SECRET:", os.getenv("CHANNEL_SECRET"))
-
             await line_bot_api.push_message(
                 PushMessageRequest(
                     to=user_id,
@@ -87,6 +88,7 @@ async_api_client = AsyncApiClient(configuration)
 line_bot_api = AsyncMessagingApi(async_api_client)
 parser = WebhookParser(channel_secret)
 
+user_chats = {}  # 儲存每個使用者的獨立 chat session
 
 
 @app.post("/callback")
@@ -106,11 +108,24 @@ async def handle_callback(request: Request):
         if not isinstance(event, MessageEvent):
             continue
         if isinstance(event.message, TextMessageContent):
-            # 使用者傳文字
+            user_input = event.message.text
+            user_id = event.source.user_id
+
+            # 如果是第一次對話，幫使用者創建獨立 chat session
+            if user_id not in user_chats:
+                user_chats[user_id] = client.chats.create(model="gemini-2.0-flash")
+                print(f"Created new chat session for user: {user_id}")
+
+            # 從使用者的專屬 chat session 取得對話回應
+            chat = user_chats[user_id]
+            response = chat.send_message(user_input)
+            response_text = response.text
+
+            # 把 AI 回應回傳給使用者
             await line_bot_api.reply_message(
                 ReplyMessageRequest(
                     reply_token=event.reply_token,
-                    messages=[TextMessage(text=event.message.text + "(Echo)")]
+                    messages=[TextMessage(text=response_text)]
                 )
             )
         elif isinstance(event.message, StickerMessageContent):
