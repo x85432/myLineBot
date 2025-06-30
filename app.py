@@ -17,6 +17,7 @@ import os
 import sys
 from dotenv import load_dotenv
 from fastapi import Request, FastAPI, HTTPException
+from contextlib import asynccontextmanager
 
 from linebot.v3.webhook import WebhookParser
 from linebot.v3.messaging import (
@@ -36,9 +37,7 @@ from linebot.v3.webhooks import (
     TextMessageContent,
     StickerMessageContent
 )
-
-
-# get channel_secret and channel_access_token from your environment variable
+# Configurations
 load_dotenv()
 channel_secret = os.getenv('CHANNEL_SECRET', None)
 channel_access_token = os.getenv('CHANNEL_ACCESS_TOKEN', None)
@@ -54,10 +53,34 @@ configuration = Configuration(
     access_token=channel_access_token
 )
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 這裡是 startup 階段
+    user_id = os.getenv('USER_ID')
+    if user_id:
+        try:
+            await line_bot_api.push_message(
+                PushMessageRequest(
+                    to=user_id,
+                    messages=[TextMessage(text="✅ LINE Bot 已經開機了！(Lifespan 版)")]
+                )
+            )
+            print("Startup notification sent to owner.")
+        except Exception as e:
+            print(f"Failed to send startup notification: {e}")
+
+    yield  # <-- 這裡是分隔 startup 和 shutdown
+
+    # 這裡是 shutdown 階段
+    print("FastAPI app is shutting down...")
+
+
+# startup
+app = FastAPI(lifespan=lifespan)
 async_api_client = AsyncApiClient(configuration)
 line_bot_api = AsyncMessagingApi(async_api_client)
 parser = WebhookParser(channel_secret)
+
 
 
 @app.post("/callback")
@@ -81,7 +104,7 @@ async def handle_callback(request: Request):
             await line_bot_api.reply_message(
                 ReplyMessageRequest(
                     reply_token=event.reply_token,
-                    messages=[TextMessage(text=event.message.text + "(我只是學你說話啦)")]
+                    messages=[TextMessage(text=event.message.text + "(Echo)")]
                 )
             )
         elif isinstance(event.message, StickerMessageContent):
