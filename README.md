@@ -1,6 +1,6 @@
 # 開始流程
 # 修改程式就可以重啟 (hot reload)
-uvicorn main:app --host 0.0.0.0 --port 5000 --reload
+uvicorn app:app --host 0.0.0.0 --port 5000 --reload
 ## 先去cmd執行
 `ngrok http 5000`
 會顯示
